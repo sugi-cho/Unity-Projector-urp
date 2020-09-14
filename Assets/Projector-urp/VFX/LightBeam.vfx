@@ -785,8 +785,8 @@ VisualEffectResource:
       = motionVectorScale * invFlipBookSize;\n\t\t\t\t\t\t#endif\n\t\t\t\t\t\t#endif\n\t\t\t\t\t\t#endif\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\t\n\t\t\t   
       \n\t\t\t    \n\t\t\t\n\t\t\t\treturn o;\n\t\t\t}\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t#include
       \"Packages/com.unity.visualeffectgraph/Shaders/VFXCommonOutput.hlsl\"\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t#if
-      VFX_PASSDEPTH == VFX_PASSDEPTH_SELECTION\n\t\t\tint _ObjectId;\n\t\t\tint _PassValue;\n\t\t\t#endif\n\t\t\t\n\t\t\t\n\t\t\t\t\t#include
-      \"Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl\"\n\t\t\t\t\t#include
+      VFX_PASSDEPTH == VFX_PASSDEPTH_SELECTION\n\t\t\tint _ObjectId;\n\t\t\tint _PassValue;\n\t\t\t#endif\n\t\t\t\n\t\t\t#define
+      REQUIRE_DEPTH_TEXTURE\n\t\t\t\n\t\t\t\t\t#include \"Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl\"\n\t\t\t\t\t#include
       \"Packages/com.unity.render-pipelines.core/ShaderLibrary/Packing.hlsl\"\n\t\t\t\t\t#include
       \"Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl\"\n\t\t\t\t\t#include
       \"Packages/com.unity.render-pipelines.core/ShaderLibrary/EntityLighting.hlsl\"\n\t\t\t\t\t#include
@@ -807,9 +807,17 @@ VisualEffectResource:
       Node: One Minus\n\t\t\tvoid Unity_OneMinus_float(float In, out float Out)\n\t\t\t{\n\t\t\t   
       Out = 1 - In;\n\t\t\t}\n\t\t\t\n\t\t\t// Node: Smoothstep\n\t\t\tvoid Unity_Smoothstep_float(float
       Edge1, float Edge2, float In, out float Out)\n\t\t\t{\n\t\t\t    Out = smoothstep(Edge1,
-      Edge2, In);\n\t\t\t}\n\t\t\t\n\t\t\tstruct SG_Input_8f924579714cec645b11944f2f5b5195\n\t\t\t{\n\t\t\t   
-      float3 ObjectSpacePosition;\n\t\t\t    half4 uv0;\n\t\t\t};\n\t\t\t\n\t\t\tstruct
-      SG_Output_8f924579714cec645b11944f2f5b5195\n\t\t\t{\n\t\t\t    float Alpha_4;\n\t\t\t};\n\t\t\t\n\t\t\tSG_Output_8f924579714cec645b11944f2f5b5195
+      Edge2, In);\n\t\t\t}\n\t\t\t\n\t\t\t// Node: Scene Depth\n\t\t\tvoid Unity_SceneDepth_Eye_float(float4
+      UV, out float Out)\n\t\t\t{\n\t\t\t    Out = LinearEyeDepth(SHADERGRAPH_SAMPLE_SCENE_DEPTH(UV.xy),
+      _ZBufferParams);\n\t\t\t}\n\t\t\t\n\t\t\t// Node: Absolute\n\t\t\tvoid Unity_Absolute_float(float
+      In, out float Out)\n\t\t\t{\n\t\t\t    Out = abs(In);\n\t\t\t}\n\t\t\t\n\t\t\t//
+      Node: Subtract\n\t\t\tvoid Unity_Subtract_float(float A, float B, out float
+      Out)\n\t\t\t{\n\t\t\t    Out = A - B;\n\t\t\t}\n\t\t\t\n\t\t\t// Node: Saturate\n\t\t\tvoid
+      Unity_Saturate_float(float In, out float Out)\n\t\t\t{\n\t\t\t    Out = saturate(In);\n\t\t\t}\n\t\t\t\n\t\t\tstruct
+      SG_Input_8f924579714cec645b11944f2f5b5195\n\t\t\t{\n\t\t\t    float3 ObjectSpacePosition;\n\t\t\t   
+      float3 ViewSpacePosition;\n\t\t\t    float4 ScreenPosition;\n\t\t\t    half4
+      uv0;\n\t\t\t};\n\t\t\t\n\t\t\tstruct SG_Output_8f924579714cec645b11944f2f5b5195\n\t\t\t{\n\t\t\t   
+      float Alpha_4;\n\t\t\t};\n\t\t\t\n\t\t\tSG_Output_8f924579714cec645b11944f2f5b5195
       SG_Evaluate_8f924579714cec645b11944f2f5b5195(\n\t\t\t    SG_Input_8f924579714cec645b11944f2f5b5195
       IN,\n\t\t\t    /* Property: FOV */ float _Fov,\n\t\t\t    /* Property: Aspect
       */ float _Aspect)\n\t\t\t{\n\t\t\t    // Node: Split\n\t\t\t    float _Split_77400E6E_R_1
@@ -855,22 +863,37 @@ VisualEffectResource:
       _Multiply_9B0973F5_Out_2, _Multiply_8D0D3566_Out_2);\n\t\t\t\n\t\t\t    //
       Node: Multiply\n\t\t\t    float _Multiply_12B4AA13_Out_2;\n\t\t\t    Unity_Multiply_float(_CustomFunction_8D84877E_outBool_1,
       _Multiply_8D0D3566_Out_2, _Multiply_12B4AA13_Out_2);\n\t\t\t\n\t\t\t    //
+      Node: Scene Depth\n\t\t\t    float _SceneDepth_1185D99C_Out_1;\n\t\t\t    Unity_SceneDepth_Eye_float(float4(IN.ScreenPosition.xy
+      / IN.ScreenPosition.w, 0, 0), _SceneDepth_1185D99C_Out_1);\n\t\t\t\n\t\t\t   
+      // Node: Split\n\t\t\t    float _Split_F4116D2F_R_1 = IN.ViewSpacePosition[0];\n\t\t\t   
+      float _Split_F4116D2F_G_2 = IN.ViewSpacePosition[1];\n\t\t\t    float _Split_F4116D2F_B_3
+      = IN.ViewSpacePosition[2];\n\t\t\t    float _Split_F4116D2F_A_4 = 0;\n\t\t\t\n\t\t\t   
+      // Node: Absolute\n\t\t\t    float _Absolute_8CB9605D_Out_1;\n\t\t\t    Unity_Absolute_float(_Split_F4116D2F_B_3,
+      _Absolute_8CB9605D_Out_1);\n\t\t\t\n\t\t\t    // Node: Subtract\n\t\t\t   
+      float _Subtract_D6566B04_Out_2;\n\t\t\t    Unity_Subtract_float(_SceneDepth_1185D99C_Out_1,
+      _Absolute_8CB9605D_Out_1, _Subtract_D6566B04_Out_2);\n\t\t\t\n\t\t\t    //
+      Node: Saturate\n\t\t\t    float _Saturate_4E56C77F_Out_1;\n\t\t\t    Unity_Saturate_float(_Subtract_D6566B04_Out_2,
+      _Saturate_4E56C77F_Out_1);\n\t\t\t\n\t\t\t    // Node: Multiply\n\t\t\t   
+      float _Multiply_BFC386C4_Out_2;\n\t\t\t    Unity_Multiply_float(_Multiply_12B4AA13_Out_2,
+      _Saturate_4E56C77F_Out_1, _Multiply_BFC386C4_Out_2);\n\t\t\t\n\t\t\t    //
       Visual Effect Master\n\t\t\t    SG_Output_8f924579714cec645b11944f2f5b5195
-      OUT;\n\t\t\t    OUT.Alpha_4 = _Multiply_12B4AA13_Out_2;\n\t\t\t    return OUT;\n\t\t\t}\n\t\t\t\n\n\t\t\t\n\t\t\t#pragma
+      OUT;\n\t\t\t    OUT.Alpha_4 = _Multiply_BFC386C4_Out_2;\n\t\t\t    return OUT;\n\t\t\t}\n\t\t\t\n\n\t\t\t\n\t\t\t#pragma
       fragment frag\n\t\t\tfloat4 frag(ps_input i) : SV_TARGET\n\t\t\t{\n\t\t\t\tUNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);\n\t\t\t\tVFXTransformPSInputs(i);\n\t\t\t   
       #ifdef VFX_SHADERGRAPH\n\t\t\t        \n\t\t\t        \n\t\t\t        //Call
       Shader Graph\n\t\t\t        SG_Input_8f924579714cec645b11944f2f5b5195 INSG
       = (SG_Input_8f924579714cec645b11944f2f5b5195)0;\n\t\t\t        float3 posRelativeWS
       = VFXGetPositionRWS(i.VFX_VARYING_POSWS);\n\t\t\t        float3 posAbsoluteWS
       = VFXGetPositionAWS(i.VFX_VARYING_POSWS);\n\t\t\t        INSG.ObjectSpacePosition
-      = TransformWorldToObject(posRelativeWS);\n\t\t\t        INSG.uv0.xy = i.uv;\n\t\t\t       
-      \n\t\t\t        SG_Output_8f924579714cec645b11944f2f5b5195 OUTSG = SG_Evaluate_8f924579714cec645b11944f2f5b5195(INSG,_Fov,
-      _Aspect);\n\t\t\t        \n\n\t\t\t        \n\t\t\t        float alpha = OUTSG.Alpha_4;\n\t\t\t   
-      #else\n\t\t\t        float alpha = VFXGetFragmentColor(i).a;\n\t\t\t       
-      alpha *= VFXGetTextureColor(VFX_SAMPLER(mainTexture),i).a;\n\t\t\t    #endif\n\t\t\t\tVFXClipFragmentColor(alpha,i);\n\t\t\t\t\n\t\t\t\t#if
-      VFX_PASSDEPTH == VFX_PASSDEPTH_MOTION_VECTOR\n\t\t\t\t\t\n\t\t\t\t\t\t\tfloat2
-      velocity = (i.VFX_VARYING_VELOCITY_CPOS.xy/i.VFX_VARYING_VELOCITY_CPOS.w) -
-      (i.VFX_VARYING_VELOCITY_CPOS_PREVIOUS.xy/i.VFX_VARYING_VELOCITY_CPOS_PREVIOUS.w);\n\t\t\t\t\t\t\t#if
+      = TransformWorldToObject(posRelativeWS);\n\t\t\t        INSG.ViewSpacePosition
+      = TransformPositionVFXToView(i.VFX_VARYING_POSWS);\n\t\t\t        INSG.ScreenPosition
+      = ComputeScreenPos(VFXTransformPositionWorldToClip(i.VFX_VARYING_POSWS), _ProjectionParams.x);\n\t\t\t       
+      INSG.uv0.xy = i.uv;\n\t\t\t        \n\t\t\t        SG_Output_8f924579714cec645b11944f2f5b5195
+      OUTSG = SG_Evaluate_8f924579714cec645b11944f2f5b5195(INSG,_Fov, _Aspect);\n\t\t\t       
+      \n\n\t\t\t        \n\t\t\t        float alpha = OUTSG.Alpha_4;\n\t\t\t    #else\n\t\t\t       
+      float alpha = VFXGetFragmentColor(i).a;\n\t\t\t        alpha *= VFXGetTextureColor(VFX_SAMPLER(mainTexture),i).a;\n\t\t\t   
+      #endif\n\t\t\t\tVFXClipFragmentColor(alpha,i);\n\t\t\t\t\n\t\t\t\t#if VFX_PASSDEPTH
+      == VFX_PASSDEPTH_MOTION_VECTOR\n\t\t\t\t\t\n\t\t\t\t\t\t\tfloat2 velocity =
+      (i.VFX_VARYING_VELOCITY_CPOS.xy/i.VFX_VARYING_VELOCITY_CPOS.w) - (i.VFX_VARYING_VELOCITY_CPOS_PREVIOUS.xy/i.VFX_VARYING_VELOCITY_CPOS_PREVIOUS.w);\n\t\t\t\t\t\t\t#if
       UNITY_UV_STARTS_AT_TOP\n\t\t\t\t\t\t\t\tvelocity.y = -velocity.y;\n\t\t\t\t\t\t\t#endif\n\t\t\t\t\t\t\tfloat4
       encodedMotionVector = 0.0f;\n\t\t\t\t\t\t\tVFXEncodeMotionVector(velocity *
       0.5f, encodedMotionVector);\n\t\t\t\t\t\t\t\n\t\t\t\t\treturn encodedMotionVector;\n\t\t\t\t#elif
@@ -1046,7 +1069,8 @@ VisualEffectResource:
       = motionVectorScale * invFlipBookSize;\n\t\t\t\t\t\t#endif\n\t\t\t\t\t\t#endif\n\t\t\t\t\t\t#endif\n\t\t\t\t\t\t\n\t\t\t\n\t\t\t\t\n\t\t\t   
       \n\t\t\t    \n\t\t\t\n\t\t\t\treturn o;\n\t\t\t}\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t\t#include
       \"Packages/com.unity.visualeffectgraph/Shaders/VFXCommonOutput.hlsl\"\n\t\t\t\n\t\t\t\n\t\t\t\n\t\t#if
-      VFX_SHADERGRAPH\n\t\t\t\n\t\t\t\t\t#include \"Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl\"\n\t\t\t\t\t#include
+      VFX_SHADERGRAPH\n\t\t\t#define REQUIRE_DEPTH_TEXTURE\n\t\t\t\n\t\t\t\t\t#include
+      \"Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl\"\n\t\t\t\t\t#include
       \"Packages/com.unity.render-pipelines.core/ShaderLibrary/Packing.hlsl\"\n\t\t\t\t\t#include
       \"Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl\"\n\t\t\t\t\t#include
       \"Packages/com.unity.render-pipelines.core/ShaderLibrary/EntityLighting.hlsl\"\n\t\t\t\t\t#include
@@ -1071,10 +1095,17 @@ VisualEffectResource:
       Unity_OneMinus_float(float In, out float Out)\n\t\t\t{\n\t\t\t    Out = 1 -
       In;\n\t\t\t}\n\t\t\t\n\t\t\t// Node: Smoothstep\n\t\t\tvoid Unity_Smoothstep_float(float
       Edge1, float Edge2, float In, out float Out)\n\t\t\t{\n\t\t\t    Out = smoothstep(Edge1,
-      Edge2, In);\n\t\t\t}\n\t\t\t\n\t\t\tstruct SG_Input_8f924579714cec645b11944f2f5b5195\n\t\t\t{\n\t\t\t   
-      float3 ObjectSpacePosition;\n\t\t\t    half4 uv0;\n\t\t\t};\n\t\t\t\n\t\t\tstruct
-      SG_Output_8f924579714cec645b11944f2f5b5195\n\t\t\t{\n\t\t\t    float3 Color_6;\n\t\t\t   
-      float Alpha_4;\n\t\t\t};\n\t\t\t\n\t\t\tSG_Output_8f924579714cec645b11944f2f5b5195
+      Edge2, In);\n\t\t\t}\n\t\t\t\n\t\t\t// Node: Scene Depth\n\t\t\tvoid Unity_SceneDepth_Eye_float(float4
+      UV, out float Out)\n\t\t\t{\n\t\t\t    Out = LinearEyeDepth(SHADERGRAPH_SAMPLE_SCENE_DEPTH(UV.xy),
+      _ZBufferParams);\n\t\t\t}\n\t\t\t\n\t\t\t// Node: Absolute\n\t\t\tvoid Unity_Absolute_float(float
+      In, out float Out)\n\t\t\t{\n\t\t\t    Out = abs(In);\n\t\t\t}\n\t\t\t\n\t\t\t//
+      Node: Subtract\n\t\t\tvoid Unity_Subtract_float(float A, float B, out float
+      Out)\n\t\t\t{\n\t\t\t    Out = A - B;\n\t\t\t}\n\t\t\t\n\t\t\t// Node: Saturate\n\t\t\tvoid
+      Unity_Saturate_float(float In, out float Out)\n\t\t\t{\n\t\t\t    Out = saturate(In);\n\t\t\t}\n\t\t\t\n\t\t\tstruct
+      SG_Input_8f924579714cec645b11944f2f5b5195\n\t\t\t{\n\t\t\t    float3 ObjectSpacePosition;\n\t\t\t   
+      float3 ViewSpacePosition;\n\t\t\t    float4 ScreenPosition;\n\t\t\t    half4
+      uv0;\n\t\t\t};\n\t\t\t\n\t\t\tstruct SG_Output_8f924579714cec645b11944f2f5b5195\n\t\t\t{\n\t\t\t   
+      float3 Color_6;\n\t\t\t    float Alpha_4;\n\t\t\t};\n\t\t\t\n\t\t\tSG_Output_8f924579714cec645b11944f2f5b5195
       SG_Evaluate_8f924579714cec645b11944f2f5b5195(\n\t\t\t    SG_Input_8f924579714cec645b11944f2f5b5195
       IN,\n\t\t\t    /* Property: FOV */ float _Fov,\n\t\t\t    /* Property: Aspect
       */ float _Aspect,\n\t\t\t    /* Property: Texture */ TEXTURE2D_PARAM(_Texture,
@@ -1140,9 +1171,22 @@ VisualEffectResource:
       _Multiply_9B0973F5_Out_2, _Multiply_8D0D3566_Out_2);\n\t\t\t\n\t\t\t    //
       Node: Multiply\n\t\t\t    float _Multiply_12B4AA13_Out_2;\n\t\t\t    Unity_Multiply_float(_CustomFunction_8D84877E_outBool_1,
       _Multiply_8D0D3566_Out_2, _Multiply_12B4AA13_Out_2);\n\t\t\t\n\t\t\t    //
+      Node: Scene Depth\n\t\t\t    float _SceneDepth_1185D99C_Out_1;\n\t\t\t    Unity_SceneDepth_Eye_float(float4(IN.ScreenPosition.xy
+      / IN.ScreenPosition.w, 0, 0), _SceneDepth_1185D99C_Out_1);\n\t\t\t\n\t\t\t   
+      // Node: Split\n\t\t\t    float _Split_F4116D2F_R_1 = IN.ViewSpacePosition[0];\n\t\t\t   
+      float _Split_F4116D2F_G_2 = IN.ViewSpacePosition[1];\n\t\t\t    float _Split_F4116D2F_B_3
+      = IN.ViewSpacePosition[2];\n\t\t\t    float _Split_F4116D2F_A_4 = 0;\n\t\t\t\n\t\t\t   
+      // Node: Absolute\n\t\t\t    float _Absolute_8CB9605D_Out_1;\n\t\t\t    Unity_Absolute_float(_Split_F4116D2F_B_3,
+      _Absolute_8CB9605D_Out_1);\n\t\t\t\n\t\t\t    // Node: Subtract\n\t\t\t   
+      float _Subtract_D6566B04_Out_2;\n\t\t\t    Unity_Subtract_float(_SceneDepth_1185D99C_Out_1,
+      _Absolute_8CB9605D_Out_1, _Subtract_D6566B04_Out_2);\n\t\t\t\n\t\t\t    //
+      Node: Saturate\n\t\t\t    float _Saturate_4E56C77F_Out_1;\n\t\t\t    Unity_Saturate_float(_Subtract_D6566B04_Out_2,
+      _Saturate_4E56C77F_Out_1);\n\t\t\t\n\t\t\t    // Node: Multiply\n\t\t\t   
+      float _Multiply_BFC386C4_Out_2;\n\t\t\t    Unity_Multiply_float(_Multiply_12B4AA13_Out_2,
+      _Saturate_4E56C77F_Out_1, _Multiply_BFC386C4_Out_2);\n\t\t\t\n\t\t\t    //
       Visual Effect Master\n\t\t\t    SG_Output_8f924579714cec645b11944f2f5b5195
       OUT;\n\t\t\t    OUT.Color_6 = (_Multiply_AAC6C6E9_Out_2.xyz);\n\t\t\t    OUT.Alpha_4
-      = _Multiply_12B4AA13_Out_2;\n\t\t\t    return OUT;\n\t\t\t}\n\t\t\t\n\n\t\t#endif\n\t\t\t\t\n\t\t\t#pragma
+      = _Multiply_BFC386C4_Out_2;\n\t\t\t    return OUT;\n\t\t\t}\n\t\t\t\n\n\t\t#endif\n\t\t\t\t\n\t\t\t#pragma
       fragment frag\n\t\t\tps_output frag(ps_input i)\n\t\t\t{\n\t\t\t\tUNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);\n\t\t\t\tps_output
       o = (ps_output)0;\n\t\t\t\tVFXTransformPSInputs(i);\n\t\t\t\t\n\t\t\t\t\t\t\t#ifdef
       VFX_VARYING_NORMAL\n\t\t\t\t\t\t\t#if USE_DOUBLE_SIDED\n\t\t\t\t\t\t\tconst
@@ -1166,13 +1210,15 @@ VisualEffectResource:
       float3 posRelativeWS = VFXGetPositionRWS(i.VFX_VARYING_POSWS);\n\t\t       
       float3 posAbsoluteWS = VFXGetPositionAWS(i.VFX_VARYING_POSWS);\n\t\t       
       INSG.ObjectSpacePosition = TransformWorldToObject(posRelativeWS);\n\t\t       
-      INSG.uv0.xy = i.uv;\n\t\t        \n\t\t        SG_Output_8f924579714cec645b11944f2f5b5195
-      OUTSG = SG_Evaluate_8f924579714cec645b11944f2f5b5195(INSG,_Fov, _Aspect, _Texture,
-      sampler_Texture, _Texture_TexelSize, _Color);\n\t\t        \n\n\t\t       
-      \n\t\t        #if HAS_SHADERGRAPH_PARAM_COLOR\n\t\t            o.color.rgb
-      = OUTSG.Color_6.rgb;\n\t\t        #endif\n\t\t        \n\t\t        #if HAS_SHADERGRAPH_PARAM_ALPHA
-      \n\t\t            o.color.a = OUTSG.Alpha_4;\n\t\t        #endif\n\t\t#else\n\t\t\t\n\t\t\t\t#define
-      VFX_TEXTURE_COLOR VFXGetTextureColor(VFX_SAMPLER(mainTexture),i)\n\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\tfloat4
+      INSG.ViewSpacePosition = TransformPositionVFXToView(i.VFX_VARYING_POSWS);\n\t\t       
+      INSG.ScreenPosition = ComputeScreenPos(VFXTransformPositionWorldToClip(i.VFX_VARYING_POSWS),
+      _ProjectionParams.x);\n\t\t        INSG.uv0.xy = i.uv;\n\t\t        \n\t\t       
+      SG_Output_8f924579714cec645b11944f2f5b5195 OUTSG = SG_Evaluate_8f924579714cec645b11944f2f5b5195(INSG,_Fov,
+      _Aspect, _Texture, sampler_Texture, _Texture_TexelSize, _Color);\n\t\t       
+      \n\n\t\t        \n\t\t        #if HAS_SHADERGRAPH_PARAM_COLOR\n\t\t           
+      o.color.rgb = OUTSG.Color_6.rgb;\n\t\t        #endif\n\t\t        \n\t\t       
+      #if HAS_SHADERGRAPH_PARAM_ALPHA \n\t\t            o.color.a = OUTSG.Alpha_4;\n\t\t       
+      #endif\n\t\t#else\n\t\t\t\n\t\t\t\t#define VFX_TEXTURE_COLOR VFXGetTextureColor(VFX_SAMPLER(mainTexture),i)\n\t\t\t\t\n\t\t\t\t\t\t\n\t\t\t\t\t\tfloat4
       color = VFXGetFragmentColor(i);\n\t\t\t\t\t\t\n\t\t\t\t\t\t#ifndef VFX_TEXTURE_COLOR\n\t\t\t\t\t\t\t#define
       VFX_TEXTURE_COLOR float4(1.0,1.0,1.0,1.0)\n\t\t\t\t\t\t#endif\n\t\t\t\t\t\t\n\t\t\t\t\t\t#if
       VFX_COLORMAPPING_DEFAULT\n\t\t\t\t\t\t\to.color = color * VFX_TEXTURE_COLOR;\n\t\t\t\t\t\t#endif\n\t\t\t\t\t\t\n\t\t\t\t\t\t#if
@@ -5696,7 +5742,7 @@ MonoBehaviour:
   generateMotionVector: 0
   m_SubOutputs: []
   cullMode: 0
-  zWriteMode: 0
+  zWriteMode: 1
   zTestMode: 0
   colorMapping: 0
   uvMode: 0
